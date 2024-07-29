@@ -1,10 +1,6 @@
 local M = {}
 local query = {}
 M.namespace = vim.api.nvim_create_namespace "markdown_preview_namespace"
-local q = require "vim.treesitter.query"
-
-local use_legacy_query = vim.fn.has "nvim-0.9.0" ~= 1
-
 
 M.config = {
   preview = {
@@ -20,6 +16,16 @@ M.config = {
         fg = "#009f4d",
       }
     },
+    block_quote_marker = {
+      icon = "┃",
+      query = { "(block_quote_marker) @block_quote_marker",
+        "(block_quote (paragraph (inline (block_continuation) @block_quote_marker)))",
+        "(block_quote (paragraph (block_continuation) @quote))",
+        "(block_quote (block_continuation) @quote)" },
+      highlight = {
+        fg = "#706357",
+      }
+    }
     -- task_list_marker_unchecked = "",
     -- task_list_marker_checked = "󰄲",
     -- list_marker_minus = ">",
@@ -28,14 +34,20 @@ M.config = {
 }
 
 -- 生成 Tree-sitter 查询字符串
-local function generate_query()
+local function generate_query(preview)
   local queries = {}
 
-  for name, _ in pairs(M.config.preview) do
-    table.insert(queries, string.format(
-      '(%s) @%s',
-      name, name
-    ))
+  for name, content in pairs(preview) do
+    if content.query == nil then
+      table.insert(queries, string.format(
+        '(%s) @%s',
+        name, name
+      ));
+    else
+      for _, query in ipairs(content.query) do
+        table.insert(queries, query)
+      end
+    end
   end
 
   return table.concat(queries, "\n")
@@ -99,11 +111,7 @@ M.repaint = function()
     -- print(name, start_row, start_col, end_row, end_col, icon)
 
     -- 获取捕获的标记文本
-    local get_text_function = use_legacy_query and q.get_node_text(node, bufnr)
-        or vim.treesitter.get_node_text(node, bufnr)
-    local level = #vim.trim(get_text_function)
-    local hl_group = name
-    local bullet_hl_group = name
+    -- local bullet_hl_group = name
 
     -- local marker_text = {}
     -- marker_text[1] = { string.rep(" ", level - 1) .. icon, { hl_group, bullet_hl_group } }
@@ -127,8 +135,8 @@ M.repaint = function()
       end_line = end_row,
       end_col = end_col,
       conceal = icon,
-      hl_group = hl_group,
-      priority = 0, -- To ignore conceal hl_group when focused
+      hl_group = name, -- use_name
+      priority = 0,    -- To ignore conceal hl_group when focused
     })
   end
   -- for _, match, metadata in iter_matches(root, bufnr, 0, -1) do
