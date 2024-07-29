@@ -8,8 +8,10 @@ local use_legacy_query = vim.fn.has "nvim-0.9.0" ~= 1
 
 M.config = {
   preview = {
-    task_list_marker_unchecked = " ",
-    task_list_marker_checked = " "
+    task_list_marker_unchecked = "  ",
+    task_list_marker_checked = "  ",
+    list_marker_minus = "◉",
+    list_marker_star = "✸",
   },
 }
 
@@ -72,7 +74,7 @@ M.repaint = function()
     local name = query_obj.captures[id]
     local icon = M.config.preview[name]
     local start_row, start_col, end_row, end_col = node:range()
-    print(name, start_row, start_col, end_row, end_col, icon)
+    -- print(name, start_row, start_col, end_row, end_col, icon)
 
     -- 获取捕获的标记文本
     local get_text_function = use_legacy_query and q.get_node_text(node, bufnr)
@@ -88,11 +90,12 @@ M.repaint = function()
     -- vim.api.nvim_buf_set_text(bufnr, start_row, start_col, end_row, end_col, { icon })
 
     -- 使用 nvim_buf_set_extmark 进行替换
-    vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col - 1, {
+    vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col, {
       end_col = 0,
       end_row = start_row + 1,
       hl_group = hl_group,
-      virt_text = marker_text,
+      -- virt_text = marker_text,
+      virt_text = { { icon, hl_group } },
       virt_text_pos = "overlay",
       hl_eol = true,
     })
@@ -108,5 +111,8 @@ M.repaint = function()
   -- end
 end
 
+
+-- register vim command
+-- vim.api.nvim_command [[command! MarkdownPreviewRepaint lua require('markdown-preview').repaint()]]
 
 return M
