@@ -8,10 +8,22 @@ local use_legacy_query = vim.fn.has "nvim-0.9.0" ~= 1
 
 M.config = {
   preview = {
-    task_list_marker_unchecked = "  ",
-    task_list_marker_checked = "  ",
-    list_marker_minus = "◉",
-    list_marker_star = "✸",
+    task_list_marker_unchecked = {
+      icon = "",
+      highlight = {
+        fg = "#706357",
+      }
+    },
+    task_list_marker_checked = {
+      icon = '󰄲',
+      highlight = {
+        fg = "#009f4d",
+      }
+    },
+    -- task_list_marker_unchecked = "",
+    -- task_list_marker_checked = "󰄲",
+    -- list_marker_minus = ">",
+    -- list_marker_star = ">",
   },
 }
 
@@ -36,6 +48,13 @@ M.setup = function(config)
   print(M.config.preview)
   -- generate query
   query = generate_query(M.config.preview)
+
+  -- highlight
+  for name, previewConfig in pairs(M.config.preview) do
+    vim.api.nvim_set_hl(0, name, previewConfig.highlight)
+  end
+
+
   vim.cmd [[
         augroup MarkdownPreview
         autocmd FileChangedShellPost,Syntax,TextChanged,InsertLeave,WinScrolled * lua require('markdown-preview').repaint()
@@ -44,6 +63,9 @@ M.setup = function(config)
 end
 
 M.repaint = function()
+  vim.wo.conceallevel = 2
+  vim.wo.cole = vim.wo.conceallevel
+
   -- 清理现有的高亮
   vim.api.nvim_buf_clear_namespace(0, M.namespace, 0, -1)
 
@@ -72,7 +94,7 @@ M.repaint = function()
   -- 遍历查询结果
   for id, node in query_obj:iter_captures(root, bufnr, 0, -1) do
     local name = query_obj.captures[id]
-    local icon = M.config.preview[name]
+    local icon = M.config.preview[name].icon
     local start_row, start_col, end_row, end_col = node:range()
     -- print(name, start_row, start_col, end_row, end_col, icon)
 
@@ -83,21 +105,30 @@ M.repaint = function()
     local hl_group = name
     local bullet_hl_group = name
 
-    local marker_text = {}
-    marker_text[1] = { string.rep(" ", level - 1) .. icon, { hl_group, bullet_hl_group } }
+    -- local marker_text = {}
+    -- marker_text[1] = { string.rep(" ", level - 1) .. icon, { hl_group, bullet_hl_group } }
 
     -- 替换原始文本
     -- vim.api.nvim_buf_set_text(bufnr, start_row, start_col, end_row, end_col, { icon })
 
     -- 使用 nvim_buf_set_extmark 进行替换
+    -- vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col, {
+    --   end_line = end_row,
+    --   end_col = end_col,
+    --   hl_group = hl_group,
+    --   conceal = "◉",
+    --   priority = 0, -- To ignore conceal hl_group when focused
+    --   -- virt_text = marker_text,
+    --   -- virt_text = { { icon, hl_group } },
+    --   -- virt_text_pos = "overlay",
+    --   -- hl_eol = true,
+    -- })
     vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col, {
-      end_col = 0,
-      end_row = start_row + 1,
+      end_line = end_row,
+      end_col = end_col,
+      conceal = icon,
       hl_group = hl_group,
-      -- virt_text = marker_text,
-      virt_text = { { icon, hl_group } },
-      virt_text_pos = "overlay",
-      hl_eol = true,
+      priority = 0, -- To ignore conceal hl_group when focused
     })
   end
   -- for _, match, metadata in iter_matches(root, bufnr, 0, -1) do
