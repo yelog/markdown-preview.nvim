@@ -1,5 +1,6 @@
 local M = {}
-local query = {}
+-- treesitter query
+local query = ""
 M.namespace = vim.api.nvim_create_namespace "markdown_preview_namespace"
 
 M.config = {
@@ -17,16 +18,13 @@ M.config = {
       }
     },
     list_marker_minus = {
-      icon = '󰘍',
-      -- icon = ''
+      icon = '',
     },
     list_marker_star = {
-      icon = '󰘍',
-      -- icon = ''
+      icon = '',
     },
     list_marker_plus = {
-      icon = '󰘍',
-      -- icon = ''
+      icon = '',
     },
     block_quote_marker = { -- Block quote
       icon = "┃",
@@ -75,6 +73,8 @@ local function generate_query(preview)
         '(%s) @%s',
         name, name
       ));
+    elseif type(content.query) == "string" then
+      table.insert(queries, content.query)
     else
       for _, query in ipairs(content.query) do
         table.insert(queries, query)
@@ -82,7 +82,25 @@ local function generate_query(preview)
     end
   end
 
+  -- 以 \n 分割, 合并查询
   return table.concat(queries, "\n")
+end
+
+-- 查找匹配项及其位置范围
+local function find_matches(bufnr, pattern)
+  local matches = {}
+  local lnum = 0
+  for _, line in ipairs(bufnr) do
+    lnum = lnum + 1
+    for start_col, end_col in string.gmatch(line, "()" .. pattern .. "()") do
+      table.insert(matches, {
+        lnum = lnum - 1,
+        start_col = start_col - 1,
+        end_col = end_col - 1
+      })
+    end
+  end
+  return matches
 end
 
 M.setup = function(config)
@@ -133,7 +151,7 @@ M.repaint = function()
   -- 获取根节点
   local root = tree:root()
   -- 测试
-  -- query = [[ (task_list_marker_unchecked) @task_list_marker_unchecked ]]
+  -- 如果 query 是数组
   -- 生成并运行查询
   local query_obj = ts.query.parse(filetype, query)
 
@@ -143,45 +161,23 @@ M.repaint = function()
     local icon = M.config.preview[name].icon
     local hl_group = M.config.preview[name].hl_group or name
     local start_row, start_col, end_row, end_col = node:range()
-    -- print(name, start_row, start_col, end_row, end_col, icon)
 
-    -- 获取捕获的标记文本
-    -- local bullet_hl_group = name
-
-    -- local marker_text = {}
-    -- marker_text[1] = { string.rep(" ", level - 1) .. icon, { hl_group, bullet_hl_group } }
-
-    -- 替换原始文本
-    -- vim.api.nvim_buf_set_text(bufnr, start_row, start_col, end_row, end_col, { icon })
-
-    -- 使用 nvim_buf_set_extmark 进行替换
-    -- vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col, {
-    --   end_line = end_row,
-    --   end_col = end_col,
-    --   hl_group = hl_group,
-    --   conceal = "◉",
-    --   priority = 0, -- To ignore conceal hl_group when focused
-    --   -- virt_text = marker_text,
-    --   -- virt_text = { { icon, hl_group } },
-    --   -- virt_text_pos = "overlay",
-    --   -- hl_eol = true,
-    -- })
     -- 如果 name 是以 list_marker_ 开头
     if vim.startswith(name, "list_marker_") then
       vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, end_col - 2, {
         end_line = end_row,
         end_col = end_col - 1,
         conceal = icon,
-        hl_group = hl_group, -- use_name
-        priority = 0,        -- To ignore conceal hl_group when focused
+        hl_group = hl_group,   -- use_name
+        priority = 0,          -- To ignore conceal hl_group when focused
       })
     else
       vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col, {
         end_line = end_row,
         end_col = end_col,
         conceal = icon,
-        hl_group = hl_group, -- use_name
-        priority = 0,        -- To ignore conceal hl_group when focused
+        hl_group = hl_group,   -- use_name
+        priority = 0,          -- To ignore conceal hl_group when focused
       })
     end
   end
