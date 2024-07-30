@@ -4,19 +4,31 @@ M.namespace = vim.api.nvim_create_namespace "markdown_preview_namespace"
 
 M.config = {
   preview = {
-    task_list_marker_unchecked = {
+    task_list_marker_unchecked = { -- Task list marker unchecked
       icon = "",
       highlight = {
         fg = "#706357",
       }
     },
-    task_list_marker_checked = {
+    task_list_marker_checked = { -- Task list marker checked
       icon = '󰄲',
       highlight = {
         fg = "#009f4d",
       }
     },
-    block_quote_marker = {
+    list_marker_minus = {
+      icon = '◉',
+      -- icon = ''
+    },
+    list_marker_star = {
+      icon = '✸',
+      -- icon = ''
+    },
+    list_marker_plus = {
+      icon = '○',
+      -- icon = ''
+    },
+    block_quote_marker = { -- Block quote
       icon = "┃",
       query = { "(block_quote_marker) @block_quote_marker",
         "(block_quote (paragraph (inline (block_continuation) @block_quote_marker)))",
@@ -25,11 +37,31 @@ M.config = {
       highlight = {
         fg = "#706357",
       }
-    }
-    -- task_list_marker_unchecked = "",
-    -- task_list_marker_checked = "󰄲",
-    -- list_marker_minus = ">",
-    -- list_marker_star = ">",
+    },
+    atx_h1_marker = { -- Heading 1
+      icon = "󰉫",
+      hl_group = "markdownH1Delimiter"
+    },
+    atx_h2_marker = { -- Heading 2
+      icon = "󰉬",
+      hl_group = "markdownH2Delimiter"
+    },
+    atx_h3_marker = { -- Heading 3
+      icon = "󰉭",
+      hl_group = "markdownH3Delimiter"
+    },
+    atx_h4_marker = { -- Heading 4
+      icon = "󰉮",
+      hl_group = "markdownH4Delimiter"
+    },
+    atx_h5_marker = { -- Heading 5
+      icon = "󰉯",
+      hl_group = "markdownH5Delimiter"
+    },
+    atx_h6_marker = { -- Heading 6
+      icon = "󰉰",
+      hl_group = "markdownH6Delimiter"
+    },
   },
 }
 
@@ -63,7 +95,9 @@ M.setup = function(config)
 
   -- highlight
   for name, previewConfig in pairs(M.config.preview) do
-    vim.api.nvim_set_hl(0, name, previewConfig.highlight)
+    if previewConfig.highlight ~= nil then
+      vim.api.nvim_set_hl(0, name, previewConfig.highlight)
+    end
   end
 
 
@@ -107,6 +141,7 @@ M.repaint = function()
   for id, node in query_obj:iter_captures(root, bufnr, 0, -1) do
     local name = query_obj.captures[id]
     local icon = M.config.preview[name].icon
+    local hl_group = M.config.preview[name].hl_group or name
     local start_row, start_col, end_row, end_col = node:range()
     -- print(name, start_row, start_col, end_row, end_col, icon)
 
@@ -131,13 +166,24 @@ M.repaint = function()
     --   -- virt_text_pos = "overlay",
     --   -- hl_eol = true,
     -- })
-    vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col, {
-      end_line = end_row,
-      end_col = end_col,
-      conceal = icon,
-      hl_group = name, -- use_name
-      priority = 0,    -- To ignore conceal hl_group when focused
-    })
+    -- 如果 name 是以 list_marker_ 开头
+    if vim.startswith(name, "list_marker_") then
+      vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, end_col - 2, {
+        end_line = end_row,
+        end_col = end_col - 1,
+        conceal = icon,
+        hl_group = hl_group, -- use_name
+        priority = 0,        -- To ignore conceal hl_group when focused
+      })
+    else
+      vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col, {
+        end_line = end_row,
+        end_col = end_col,
+        conceal = icon,
+        hl_group = hl_group, -- use_name
+        priority = 0,        -- To ignore conceal hl_group when focused
+      })
+    end
   end
   -- for _, match, metadata in iter_matches(root, bufnr, 0, -1) do
   --   for id, node in pairs(match) do
