@@ -17,15 +17,15 @@ M.config = {
       }
     },
     list_marker_minus = {
-      icon = '◉',
+      icon = '󰘍',
       -- icon = ''
     },
     list_marker_star = {
-      icon = '✸',
+      icon = '󰘍',
       -- icon = ''
     },
     list_marker_plus = {
-      icon = '○',
+      icon = '󰘍',
       -- icon = ''
     },
     block_quote_marker = { -- Block quote
