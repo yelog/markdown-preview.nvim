@@ -1,6 +1,7 @@
 local M = {}
 -- treesitter query
 local query = ""
+local regex_list = {}
 M.namespace = vim.api.nvim_create_namespace "markdown_preview_namespace"
 
 M.config = {
@@ -17,21 +18,112 @@ M.config = {
         fg = "#009f4d",
       }
     },
-    list_marker_minus = {
+    list_marker_minus = { -- List marker minus
       icon = '',
     },
-    list_marker_star = {
+    list_marker_star = { -- List marker star
       icon = '',
     },
-    list_marker_plus = {
+    list_marker_plus = { -- List marker plus
       icon = '',
     },
+    inline_code = { -- List marker plus
+      icon = ' ',
+      hl_group = "markdownCode",
+      -- regex = '`[^`]+`',
+      regex = '`[^`]+`',
+      replace_postion = function(start_row, start_col, end_row, end_col)
+        return { { start_row, start_col, start_row, start_col + 1 },
+          { end_row,   end_col - 1, end_row,   end_col } }
+      end,
+    },
+    italic = { -- List marker plus
+      icon = '',
+      -- regex = '`[^`]+`',
+      regex = "_[^_]+_",
+      replace_postion = function(start_row, start_col, end_row, end_col)
+        return { { start_row, start_col, start_row, start_col + 1 },
+          { end_row,   end_col - 1, end_row,   end_col } }
+      end,
+    },
+    bolder = { -- bolder
+      icon = '',
+      regex = "%*%*[^%*]+%*%*",
+      replace_postion = function(start_row, start_col, end_row, end_col)
+        return { { start_row, start_col, start_row, start_col + 2 },
+          { end_row,   end_col - 2, end_row,   end_col } }
+      end,
+    },
+    strikethrough = { -- strikethrough
+      icon = '',
+      regex = "~~[^~]+~~",
+      replace_postion = function(start_row, start_col, end_row, end_col)
+        return { { start_row, start_col, start_row, start_col + 2 },
+          { end_row,   end_col - 2, end_row,   end_col } }
+      end,
+    },
+    underline = { -- underline
+      icon = '',
+      regex = "<u>.-</u>",
+      replace_postion = function(start_row, start_col, end_row, end_col)
+        return { { start_row, start_col, start_row, start_col + 3 },
+          { end_row,   end_col - 4, end_row,   end_col } }
+      end,
+    },
+    mark = {
+      icon = '',
+      regex = "<mark>.-</mark>",
+      replace_postion = function(start_row, start_col, end_row, end_col)
+        return { { start_row, start_col, start_row, start_col + 6 },
+          { end_row,   end_col - 7, end_row,   end_col } }
+      end,
+    },
+    callout_note = {
+      icon = '',
+      highlight = {
+        fg = "#00CEE3",
+      },
+      regex = ">%s%[!NOTE%]",
+      replace_postion = function(start_row, start_col, end_row, end_col)
+        return { { start_row, start_col + 1, start_row, start_col + 4 },
+          { end_row,   end_col - 1,   end_row,   end_col } }
+      end,
+    },
+    callout_info = {
+      icon = '󰙎',
+      highlight = {
+        fg = "#11FEE3",
+      },
+      regex = ">%s%[!INFO%]",
+      replace_postion = function(start_row, start_col, end_row, end_col)
+        return { { start_row, start_col + 1, start_row, start_col + 4 },
+          { end_row,   end_col - 1,   end_row,   end_col } }
+      end,
+    },
+    markdownFootnote1 = {
+      icon = '󰲠',
+      regex = "%[%^1%]",
+      hl_group = "markdownFootnote",
+    },
+    markdownFootnote2 = {
+      icon = '󰲢',
+      regex = "%[%^2%]",
+      hl_group = "markdownFootnote",
+    },
+    -- code_block = { -- Code block
+    --   icon = "󰊕",
+    --   query = { "(fenced_code_block) @code_block",
+    --     "(indented_code_block) @code_block" },
+    --   highlight = {
+    --     bg = "#2d2d2d",
+    --   }
+    -- },
     block_quote_marker = { -- Block quote
       icon = "┃",
       query = { "(block_quote_marker) @block_quote_marker",
         "(block_quote (paragraph (inline (block_continuation) @block_quote_marker)))",
-        "(block_quote (paragraph (block_continuation) @quote))",
-        "(block_quote (block_continuation) @quote)" },
+        "(block_quote (paragraph (block_continuation) @block_quote_marker))",
+        "(block_quote (block_continuation) @block_quote_marker)" },
       highlight = {
         fg = "#706357",
       }
@@ -68,22 +160,24 @@ local function generate_query(preview)
   local queries = {}
 
   for name, content in pairs(preview) do
-    if content.query == nil then
+    if (content.regex ~= nil) then
+      regex_list[name] = content.regex
+    elseif content.query == nil then
       table.insert(queries, string.format(
         '(%s) @%s',
         name, name
       ));
     elseif type(content.query) == "string" then
       table.insert(queries, content.query)
-    else
-      for _, query in ipairs(content.query) do
-        table.insert(queries, query)
+    elseif type(content.query) == "table" then
+      for _, query_item in ipairs(content.query) do
+        table.insert(queries, query_item)
       end
     end
   end
 
   -- 以 \n 分割, 合并查询
-  return table.concat(queries, "\n")
+  query = table.concat(queries, "\n")
 end
 
 -- 查找匹配项及其位置范围
@@ -107,9 +201,9 @@ M.setup = function(config)
   -- merge config
   config = config or {}
   M.config = vim.tbl_deep_extend("force", M.config, config)
-  print(M.config.preview)
+  -- print(M.config.preview)
   -- generate query
-  query = generate_query(M.config.preview)
+  generate_query(M.config.preview)
 
   -- highlight
   for name, previewConfig in pairs(M.config.preview) do
@@ -150,8 +244,6 @@ M.repaint = function()
   local tree = parser:parse()[1]
   -- 获取根节点
   local root = tree:root()
-  -- 测试
-  -- 如果 query 是数组
   -- 生成并运行查询
   local query_obj = ts.query.parse(filetype, query)
 
@@ -168,28 +260,50 @@ M.repaint = function()
         end_line = end_row,
         end_col = end_col - 1,
         conceal = icon,
-        hl_group = hl_group,   -- use_name
-        priority = 0,          -- To ignore conceal hl_group when focused
+        hl_group = hl_group, -- use_name
+        priority = 0,        -- To ignore conceal hl_group when focused
       })
     else
       vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col, {
         end_line = end_row,
         end_col = end_col,
         conceal = icon,
-        hl_group = hl_group,   -- use_name
-        priority = 0,          -- To ignore conceal hl_group when focused
+        hl_group = hl_group, -- use_name
+        priority = 0,        -- To ignore conceal hl_group when focused
       })
     end
   end
-  -- for _, match, metadata in iter_matches(root, bufnr, 0, -1) do
-  --   for id, node in pairs(match) do
-  --     print(id, node)
-  --     -- local start_row, start_column, end_row, end_column =
-  --     --     unpack(vim.tbl_extend("force", { node:range() }, (metadata[id] or {}).range or {}))
-  --     -- 遍历 config.preivew.list, 然后打印
-  --     -- M.config.preview
-  --   end
-  -- end
+  for name, regex in pairs(regex_list) do
+    local matches = find_matches(vim.api.nvim_buf_get_lines(0, 0, -1, false), regex)
+    -- print(name, #matches)
+    for _, match in ipairs(matches) do
+      -- print(match.lnum, match.start_col, match.end_col)
+
+      local replace_postion_list = { { match.lnum, match.start_col, match.lnum, match.end_col } }
+
+      if M.config.preview[name].replace_postion ~= nil then
+        replace_postion_list = M.config.preview[name].replace_postion(match.lnum, match.start_col, match.lnum,
+          match.end_col)
+      end
+
+      for _, replace_postion in ipairs(replace_postion_list) do
+        vim.api.nvim_buf_set_extmark(bufnr, M.namespace, replace_postion[1], replace_postion[2], {
+          end_line = replace_postion[3],
+          end_col = replace_postion[4],
+          conceal = M.config.preview[name].icon,
+          hl_group = M.config.preview[name].hl_group or name,
+          priority = 0,
+        })
+      end
+      -- vim.api.nvim_buf_set_extmark(bufnr, M.namespace, match.lnum, match.start_col, {
+      --   end_line = match.lnum,
+      --   end_col = match.end_col,
+      --   conceal = M.config.preview[name].icon,
+      --   hl_group = M.config.preview[name].hl_group or name,
+      --   priority = 0,
+      -- })
+    end
+  end
 end
 
 
