@@ -27,96 +27,74 @@ M.config = {
     list_marker_plus = { -- List marker plus
       icon = '',
     },
+    link = {
+      icon = '',
+      -- 暂时解决不了去掉方括号的问题, 先暂时保留, 还有不能匹配行首的问题
+      regex = "[^!]%[[^%[%]]-%](%(.-%))",
+      -- regex = "(%[)([^%[%]]-)%](.-%)",
+      hl_group = 'ye_link'
+    },
+    image = {
+      icon = { '', '' },
+      -- 暂时解决不了去掉方括号的问题, 先暂时保留, 还有不能匹配行首的问题
+      regex = "(!%[)[^%[%]]-(%]%(.-%))",
+      -- regex = "(%[)([^%[%]]-)%](.-%)",
+      hl_group = 'ye_link'
+    },
+    tableLine = {
+      -- icon = '┃',
+      icon = '│',
+      regex = "[^|]+(%|)",
+      hl_group = 'tableSeparator'
+    },
+    -- tableRow = {
+    --   icon = '─',
+    --   width = '',
+    --   -- query = { "(pipe_table_delimiter_row (pipe_table_delimiter_cell) @tableRow)" },
+    --   regex = '%-',
+    --   hl_group = 'tableBorder'
+    -- },
     inline_code = { -- List marker plus
       icon = ' ',
       hl_group = "markdownCode",
-      -- regex = '`[^`]+`',
-      regex = '`[^`]+`',
-      replace_postion = function(start_row, start_col, end_row, end_col)
-        return { { start_row, start_col, start_row, start_col + 1 },
-          { end_row,   end_col - 1, end_row,   end_col } }
-      end,
+      regex = '(`)[^`]+(`)',
     },
-    italic = { -- List marker plus
-      icon = '',
-      -- regex = '`[^`]+`',
-      regex = "_[^_]+_",
-      replace_postion = function(start_row, start_col, end_row, end_col)
-        return { { start_row, start_col, start_row, start_col + 1 },
-          { end_row,   end_col - 1, end_row,   end_col } }
-      end,
+    italic = { -- Italic
+      regex = "([*_])[^*`~]-([*_])",
     },
     bolder = { -- bolder
       icon = '',
-      regex = "%*%*[^%*]+%*%*",
-      replace_postion = function(start_row, start_col, end_row, end_col)
-        return { { start_row, start_col, start_row, start_col + 2 },
-          { end_row,   end_col - 2, end_row,   end_col } }
-      end,
+      regex = "(%*%*)[^%*]+(%*%*)",
     },
     strikethrough = { -- strikethrough
-      icon = '',
-      regex = "~~[^~]+~~",
-      replace_postion = function(start_row, start_col, end_row, end_col)
-        return { { start_row, start_col, start_row, start_col + 2 },
-          { end_row,   end_col - 2, end_row,   end_col } }
-      end,
+      regex = "(~~)[^~]+(~~)",
     },
     underline = { -- underline
-      icon = '',
-      regex = "<u>.-</u>",
-      replace_postion = function(start_row, start_col, end_row, end_col)
-        return { { start_row, start_col, start_row, start_col + 3 },
-          { end_row,   end_col - 4, end_row,   end_col } }
-      end,
+      regex = "(<u>).-(</u>)",
     },
     mark = {
-      icon = '',
-      regex = "<mark>.-</mark>",
-      replace_postion = function(start_row, start_col, end_row, end_col)
-        return { { start_row, start_col, start_row, start_col + 6 },
-          { end_row,   end_col - 7, end_row,   end_col } }
-      end,
-    },
-    callout_note = {
-      icon = '',
-      highlight = {
-        fg = "#00CEE3",
-      },
-      regex = ">%s%[!NOTE%]",
-      replace_postion = function(start_row, start_col, end_row, end_col)
-        return { { start_row, start_col + 1, start_row, start_col + 4 },
-          { end_row,   end_col - 1,   end_row,   end_col } }
-      end,
-    },
-    callout_info = {
-      icon = '󰙎',
-      highlight = {
-        fg = "#11FEE3",
-      },
-      regex = ">%s%[!INFO%]",
-      replace_postion = function(start_row, start_col, end_row, end_col)
-        return { { start_row, start_col + 1, start_row, start_col + 4 },
-          { end_row,   end_col - 1,   end_row,   end_col } }
-      end,
+      regex = "(<mark>).-(</mark>)",
     },
     markdownFootnote1 = {
       icon = '󰲠',
-      regex = "%[%^1%]",
+      regex = "(%[%^1%])",
       hl_group = "markdownFootnote",
     },
     markdownFootnote2 = {
       icon = '󰲢',
-      regex = "%[%^2%]",
+      regex = "(%[%^2%])",
       hl_group = "markdownFootnote",
     },
+    thematic_break = {
+      icon = '─',
+      whole_line = true,
+      hl_group = "markdownRule",
+    },
     -- code_block = { -- Code block
-    --   icon = "󰊕",
-    --   query = { "(fenced_code_block) @code_block",
-    --     "(indented_code_block) @code_block" },
-    --   highlight = {
-    --     bg = "#2d2d2d",
-    --   }
+    --   icon = "",
+    --   -- query = { "(fenced_code_block) @code_block",
+    --   --   "(indented_code_block) @code_block" },
+    --   regex = "(```)",
     -- },
     block_quote_marker = { -- Block quote
       icon = "┃",
@@ -124,9 +102,16 @@ M.config = {
         "(block_quote (paragraph (inline (block_continuation) @block_quote_marker)))",
         "(block_quote (paragraph (block_continuation) @block_quote_marker))",
         "(block_quote (block_continuation) @block_quote_marker)" },
-      highlight = {
-        fg = "#706357",
-      }
+    },
+    callout_note = {
+      icon = { '', '' },
+      regex = ">(%s%[!)NOTE(%])",
+      hl_group = 'ye_quote',
+    },
+    callout_info = {
+      icon = { '󰙎', '' },
+      regex = ">(%s%[!)INFO(%])",
+      hl_group = 'ye_quote',
     },
     atx_h1_marker = { -- Heading 1
       icon = "󰉫",
@@ -181,21 +166,66 @@ local function generate_query(preview)
 end
 
 -- 查找匹配项及其位置范围
-local function find_matches(bufnr, pattern)
+-- local function find_matches(bufnr, pattern)
+--   local matches = {}
+--   local lnum = 0
+--   for _, line in ipairs(bufnr) do
+--     lnum = lnum + 1
+--     for start_col, end_col in string.gmatch(line, "()" .. pattern .. "()") do
+--       table.insert(matches, {
+--         lnum = lnum - 1,
+--         start_col = start_col - 1,
+--         end_col = end_col - 1
+--       })
+--     end
+--   end
+--   return matches
+-- end
+
+-- 获取正则表达式中的捕获组数量
+local function get_capture_group_count(pattern)
+  local _, count = string.gsub(pattern, "%b()", "")
+  return count
+end
+
+-- 查找匹配项及其捕获组和位置
+local function find_matches_with_groups(bufnr, pattern)
   local matches = {}
+  local capture_group_count = get_capture_group_count(pattern)
   local lnum = 0
+
   for _, line in ipairs(bufnr) do
     lnum = lnum + 1
-    for start_col, end_col in string.gmatch(line, "()" .. pattern .. "()") do
-      table.insert(matches, {
-        lnum = lnum - 1,
-        start_col = start_col - 1,
-        end_col = end_col - 1
-      })
+    local start_pos = 1
+    while start_pos <= #line do
+      local captures = { string.match(line, pattern, start_pos) }
+      local start_col, end_col = string.find(line, pattern, start_pos)
+
+      if #captures == 0 then
+        break
+      end
+
+      local match = { lnum = lnum - 1, groups = {}, start_col = start_col - 1, end_col = end_col - 1 }
+      local current_pos = start_pos
+
+      for i = 1, capture_group_count do
+        local s, e = string.find(line, captures[i], current_pos, true)
+        if s and e then
+          match.groups[i] = { text = captures[i], start_col = s - 1, end_col = e - 1 }
+          current_pos = e + 1
+        end
+      end
+
+      -- 确定下一个匹配的起始位置，避免死循环
+      start_pos = current_pos + 1
+
+      table.insert(matches, match)
     end
   end
+
   return matches
 end
+
 
 M.setup = function(config)
   -- merge config
@@ -215,7 +245,7 @@ M.setup = function(config)
 
   vim.cmd [[
         augroup MarkdownPreview
-        autocmd FileChangedShellPost,Syntax,TextChanged,InsertLeave,WinScrolled * lua require('markdown-preview').repaint()
+        autocmd FileChangedShellPost,Syntax,TextChanged,InsertLeave,TextChangedI,WinScrolled * lua require('markdown-preview').repaint()
         augroup END
     ]]
 end
@@ -233,6 +263,7 @@ M.repaint = function()
     return
   end
   local bufnr = vim.api.nvim_get_current_buf()
+  local width = vim.api.nvim_win_get_width(0)
   -- local language_tree = vim.treesitter.get_parser(bufnr, filetype)
   -- local syntax_tree = language_tree:parse()
   -- local root = syntax_tree[1]:root()
@@ -250,12 +281,19 @@ M.repaint = function()
   -- 遍历查询结果
   for id, node in query_obj:iter_captures(root, bufnr, 0, -1) do
     local name = query_obj.captures[id]
-    local icon = M.config.preview[name].icon
+    local icon = type(M.config.preview[name].icon) == "table" and M.config.preview[name].icon[1] or
+        M.config.preview[name].icon
     local hl_group = M.config.preview[name].hl_group or name
     local start_row, start_col, end_row, end_col = node:range()
 
     -- 如果 name 是以 list_marker_ 开头
-    if vim.startswith(name, "list_marker_") then
+    if M.config.preview[name].whole_line then
+      vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, 0, {
+        virt_text = { { icon:rep(width), hl_group } },
+        virt_text_pos = "overlay",
+        hl_mode = "combine",
+      })
+    elseif vim.startswith(name, "list_marker_") then
       vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, end_col - 2, {
         end_line = end_row,
         end_col = end_col - 1,
@@ -274,27 +312,50 @@ M.repaint = function()
     end
   end
   for name, regex in pairs(regex_list) do
-    local matches = find_matches(vim.api.nvim_buf_get_lines(0, 0, -1, false), regex)
-    -- print(name, #matches)
+    local icon = M.config.preview[name].icon or '';
+    local matches = find_matches_with_groups(vim.api.nvim_buf_get_lines(0, 0, -1, false), regex)
+    -- if name == 'tableRow' then
+    --   print(#matches)
+    -- end
     for _, match in ipairs(matches) do
       -- print(match.lnum, match.start_col, match.end_col)
 
-      local replace_postion_list = { { match.lnum, match.start_col, match.lnum, match.end_col } }
+      -- local replace_postion_list = { { match.lnum, match.start_col, match.lnum, match.end_col } }
+      --
+      -- if M.config.preview[name].replace_postion ~= nil then
+      --   replace_postion_list = M.config.preview[name].replace_postion(match.lnum, match.start_col, match.lnum,
+      --     match.end_col)
+      -- end
 
-      if M.config.preview[name].replace_postion ~= nil then
-        replace_postion_list = M.config.preview[name].replace_postion(match.lnum, match.start_col, match.lnum,
-          match.end_col)
-      end
-
-      for _, replace_postion in ipairs(replace_postion_list) do
-        vim.api.nvim_buf_set_extmark(bufnr, M.namespace, replace_postion[1], replace_postion[2], {
-          end_line = replace_postion[3],
-          end_col = replace_postion[4],
-          conceal = M.config.preview[name].icon,
+      if #match.groups == 0 then
+        vim.api.nvim_buf_set_extmark(bufnr, M.namespace, match.lnum, match.start_col, {
+          end_line = match.lnum,
+          end_col = match.end_col,
+          conceal = type(icon) == "table" and icon[1] or icon,
           hl_group = M.config.preview[name].hl_group or name,
           priority = 0,
         })
+      else
+        for i, group in ipairs(match.groups) do
+          vim.api.nvim_buf_set_extmark(bufnr, M.namespace, match.lnum, group.start_col, {
+            end_line = match.lnum,
+            end_col = group.end_col + 1,
+            conceal = type(icon) == "table" and icon[i] or icon,
+            hl_group = M.config.preview[name].hl_group or name,
+            priority = 0,
+          })
+        end
       end
+
+      -- for _, replace_postion in ipairs(replace_postion_list) do
+      --   vim.api.nvim_buf_set_extmark(bufnr, M.namespace, replace_postion[1], replace_postion[2], {
+      --     end_line = replace_postion[3],
+      --     end_col = replace_postion[4],
+      --     conceal = icon,
+      --     hl_group = M.config.preview[name].hl_group or name,
+      --     priority = 0,
+      --   })
+      -- end
       -- vim.api.nvim_buf_set_extmark(bufnr, M.namespace, match.lnum, match.start_col, {
       --   end_line = match.lnum,
       --   end_col = match.end_col,
