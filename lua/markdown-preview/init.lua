@@ -18,14 +18,30 @@ M.config = {
         fg = "#009f4d",
       }
     },
+    task_list_marker_indeterminate = {
+      icon = '󰡖',
+      highlight = {
+        fg = '#E9AD5B',
+      },
+      regex = '(%[%-%])',
+    },
     list_marker_minus = { -- List marker minus
-      icon = '',
+      icon = '',
+      highlight = {
+        fg = '#E9AD5B'
+      }
     },
     list_marker_star = { -- List marker star
-      icon = '',
+      icon = '',
+      highlight = {
+        fg = '#00C5DE'
+      }
     },
     list_marker_plus = { -- List marker plus
-      icon = '',
+      icon = '',
+      highlight = {
+        fg = '#9FF8BB'
+      }
     },
     link = {
       icon = '',
@@ -97,7 +113,8 @@ M.config = {
     --   regex = "(```)",
     -- },
     block_quote_marker = { -- Block quote
-      icon = "┃",
+      -- icon = "┃",
+      icon = "▋",
       query = { "(block_quote_marker) @block_quote_marker",
         "(block_quote (paragraph (inline (block_continuation) @block_quote_marker)))",
         "(block_quote (paragraph (block_continuation) @block_quote_marker))",
@@ -286,7 +303,6 @@ M.repaint = function()
     local hl_group = M.config.preview[name].hl_group or name
     local start_row, start_col, end_row, end_col = node:range()
 
-    -- 如果 name 是以 list_marker_ 开头
     if M.config.preview[name].whole_line then
       vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, 0, {
         virt_text = { { icon:rep(width), hl_group } },
