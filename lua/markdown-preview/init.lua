@@ -29,33 +29,38 @@ M.config = {
       icon = '',
       highlight = {
         fg = '#E9AD5B'
-      }
+      },
+      icon_padding = { 0, 1 }
     },
     list_marker_star = { -- List marker star
       icon = '',
       highlight = {
         fg = '#00C5DE'
-      }
+      },
+      icon_padding = { 0, 1 }
     },
     list_marker_plus = { -- List marker plus
       icon = '',
       highlight = {
         fg = '#9FF8BB'
-      }
+      },
+      icon_padding = { 0, 1 }
     },
     link = {
-      icon = { '', '' },
+      icon = { '', '' },
       -- 暂时解决不了去掉方括号的问题, 先暂时保留, 还有不能匹配行首的问题
       regex = "^[^!]-(%[)[^%[%]]-(%]%(.-%))",
       -- regex = "([^!]%[.-%]%b()) ",
-      hl_group = 'ye_link'
+      hl_group = 'ye_link',
+      icon_padding = { { 0, 1 } }
     },
     image = {
-      icon = { '', '' },
+      icon = { '', '' },
       -- 暂时解决不了去掉方括号的问题, 先暂时保留, 还有不能匹配行首的问题
       regex = "(!%[)[^%[%]]-(%]%(.-%))",
       -- regex = "(%[)([^%[%]]-)%](.-%)",
-      hl_group = 'ye_link'
+      hl_group = 'ye_link',
+      icon_padding = { { 0, 1 } }
     },
     tableLine = {
       -- icon = '┃',
@@ -247,6 +252,58 @@ local function find_matches_with_groups(bufnr, pattern)
   return matches
 end
 
+local function render_padding(icon_padding, padding_index, start_row, start_col, end_row, end_col, hl_group)
+  -- 最终构建为 {{0, 0}, {0, 0}} 的格式, 如果是 icon_padding 是单个数字, 则转换为 {{0, 0}}
+  -- 如果是两个数字{0, 0}, 则是 {{0,0}}, 如果已经是 {{0,0}} 格式, 则不做处理
+  local final_icon_padding = {}
+  if type(icon_padding) == "number" then
+    final_icon_padding = { icon_padding, icon_padding }
+  elseif type(icon_padding) == "table" then
+    if #icon_padding == 0 or (type(icon_padding[1]) == 'number' and #icon_padding ~= 2) then
+      final_icon_padding = { 0, 0 }
+    elseif type(icon_padding[1]) == 'number' and type(icon_padding[2]) == 'number' then
+      final_icon_padding = { icon_padding[1], icon_padding[2] }
+    else
+      local matchIndex = false
+      for i, v in ipairs(icon_padding) do
+        if i == padding_index then
+          if type(v) == 'number' then
+            final_icon_padding = { v, v }
+          elseif type(v) == 'table' and #v == 2 and type(v[1]) == 'number' and type(v[2]) == 'number' then
+            final_icon_padding = { v[1], v[2] }
+          else
+            final_icon_padding = { 0, 0 }
+          end
+          -- 结束循环
+          matchIndex = true
+          break
+        else
+        end
+      end
+      if not matchIndex then
+        final_icon_padding = { 0, 0 }
+      end
+    end
+  else
+    final_icon_padding = { 0, 0 }
+  end
+  local fill_content = ' '
+  if final_icon_padding[1] ~= 0 then
+    vim.api.nvim_buf_set_extmark(0, M.namespace, start_row, start_col, {
+      virt_text = { { fill_content:rep(final_icon_padding[1]), hl_group } },
+      virt_text_pos = "inline",
+      hl_mode = "combine",
+    })
+  end
+  if final_icon_padding[2] ~= 0 then
+    vim.api.nvim_buf_set_extmark(0, M.namespace, end_row, end_col, {
+      virt_text = { { fill_content:rep(final_icon_padding[2]), hl_group } },
+      virt_text_pos = "inline",
+      hl_mode = "combine",
+    })
+  end
+end
+
 
 M.setup = function(config)
   -- merge config
@@ -285,6 +342,7 @@ M.repaint = function()
   end
   local bufnr = vim.api.nvim_get_current_buf()
   local width = vim.api.nvim_win_get_width(0)
+
   -- local language_tree = vim.treesitter.get_parser(bufnr, filetype)
   -- local syntax_tree = language_tree:parse()
   -- local root = syntax_tree[1]:root()
@@ -309,6 +367,7 @@ M.repaint = function()
     -- 获取当前行内容
     local line = vim.api.nvim_buf_get_lines(bufnr, start_row, start_row + 1, false)[1]
     local line_length = #line
+    local icon_padding = M.config.preview[name].icon_padding
 
     -- set icon
     if M.config.preview[name].whole_line then
@@ -316,14 +375,6 @@ M.repaint = function()
         virt_text = { { icon:rep(width), hl_group } },
         virt_text_pos = "overlay",
         hl_mode = "combine",
-      })
-    elseif vim.startswith(name, "list_marker_") then
-      vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, end_col - 2, {
-        end_line = end_row,
-        end_col = end_col - 1,
-        conceal = icon,
-        hl_group = hl_group, -- use_name
-        priority = 0,        -- To ignore conceal hl_group when focused
       })
     else
       vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col, {
@@ -334,8 +385,8 @@ M.repaint = function()
         priority = 0,        -- To ignore conceal hl_group when focused
       })
     end
+    local fill_content = ' '
     if M.config.preview[name].hl_fill then
-      local fill_content = ' '
       -- 从当前行尾开始, 插入空格, 直到行尾
       vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, line_length, {
         virt_text = { { fill_content:rep(width - line_length), hl_group } },
@@ -343,6 +394,24 @@ M.repaint = function()
         hl_mode = "combine",
       })
     end
+    -- 插入 padding
+    render_padding(icon_padding, 0, start_row, start_col, end_row, end_col, hl_group)
+    -- if icon_padding ~= nil then
+    --   if icon_padding[1] ~= 0 then
+    --     vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col, {
+    --       virt_text = { { fill_content:rep(icon_padding[1]), hl_group } },
+    --       virt_text_pos = "inline",
+    --       hl_mode = "combine",
+    --     })
+    --   end
+    --   if icon_padding[2] ~= 0 then
+    --     vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, end_col, {
+    --       virt_text = { { fill_content:rep(icon_padding[2]), hl_group } },
+    --       virt_text_pos = "inline",
+    --       hl_mode = "combine",
+    --     })
+    --   end
+    -- end
   end
   for name, regex in pairs(regex_list) do
     local icon = M.config.preview[name].icon or '';
@@ -361,22 +430,28 @@ M.repaint = function()
       -- end
 
       if #match.groups == 0 then
+        local hl_group = M.config.preview[name].hl_group or name
         vim.api.nvim_buf_set_extmark(bufnr, M.namespace, match.lnum, match.start_col, {
           end_line = match.lnum,
           end_col = match.end_col,
           conceal = type(icon) == "table" and icon[1] or icon,
-          hl_group = M.config.preview[name].hl_group or name,
+          hl_group = hl_group,
           priority = 0,
         })
+        render_padding(icon_padding, 0, match.start_row, match.start_col, match.end_row, match.end_col, hl_group)
       else
         for i, group in ipairs(match.groups) do
+          local hl_group = M.config.preview[name].hl_group or name
           vim.api.nvim_buf_set_extmark(bufnr, M.namespace, match.lnum, group.start_col, {
             end_line = match.lnum,
             end_col = group.end_col + 1,
             conceal = type(icon) == "table" and icon[i] or icon,
-            hl_group = M.config.preview[name].hl_group or name,
+            hl_group = hl_group,
             priority = 0,
           })
+          render_padding(M.config.preview[name].icon_padding, i, match.lnum, group.start_col, match.lnum,
+            group.end_col + 1, hl_group)
+          -- print(group.text, match.lnum, group.start_col, group.end_col)
         end
       end
 
