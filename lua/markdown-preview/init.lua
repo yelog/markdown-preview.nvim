@@ -44,10 +44,10 @@ M.config = {
       }
     },
     link = {
-      icon = '',
+      icon = { '', '' },
       -- 暂时解决不了去掉方括号的问题, 先暂时保留, 还有不能匹配行首的问题
-      regex = "[^!]%[[^%[%]]-%](%(.-%))",
-      -- regex = "(%[)([^%[%]]-)%](.-%)",
+      regex = "^[^!]-(%[)[^%[%]]-(%]%(.-%))",
+      -- regex = "([^!]%[.-%]%b()) ",
       hl_group = 'ye_link'
     },
     image = {
@@ -70,10 +70,10 @@ M.config = {
     --   regex = '%-',
     --   hl_group = 'tableBorder'
     -- },
-    inline_code = { -- List marker plus
+    inline_code = { -- inline code
       icon = ' ',
       hl_group = "markdownCode",
-      regex = '(`)[^`]+(`)',
+      regex = '(`)[^`\n]+(`)',
     },
     italic = { -- Italic
       regex = "([*_])[^*`~]-([*_])",
@@ -107,10 +107,12 @@ M.config = {
       hl_group = "markdownRule",
     },
     -- code_block = { -- Code block
-    --   icon = "",
-    --   -- query = { "(fenced_code_block) @code_block",
-    --   --   "(indented_code_block) @code_block" },
-    --   regex = "(```)",
+    --   icon = "",
+    --   query = { "(fenced_code_block) @code_block",
+    --     "(indented_code_block) @code_block" },
+    --   -- regex = "(```)([.\n]-)(```)",
+    --   hl_fill = true,
+    --   hl_group = 'ye_codeblock'
     -- },
     block_quote_marker = { -- Block quote
       -- icon = "┃",
@@ -133,27 +135,27 @@ M.config = {
       hl_group = 'ye_quote',
     },
     atx_h1_marker = { -- Heading 1
-      icon = "󰉫",
+      icon = "󰎦",
       hl_group = "markdownH1Delimiter"
     },
     atx_h2_marker = { -- Heading 2
-      icon = "󰉬",
+      icon = "󰎩",
       hl_group = "markdownH2Delimiter"
     },
     atx_h3_marker = { -- Heading 3
-      icon = "󰉭",
+      icon = "󰎬",
       hl_group = "markdownH3Delimiter"
     },
     atx_h4_marker = { -- Heading 4
-      icon = "󰉮",
+      icon = "󰎮",
       hl_group = "markdownH4Delimiter"
     },
     atx_h5_marker = { -- Heading 5
-      icon = "󰉯",
+      icon = "󰎰",
       hl_group = "markdownH5Delimiter"
     },
     atx_h6_marker = { -- Heading 6
-      icon = "󰉰",
+      icon = "󰎵",
       hl_group = "markdownH6Delimiter"
     },
   },
