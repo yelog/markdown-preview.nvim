@@ -119,6 +119,8 @@ M.config = {
         "(block_quote (paragraph (inline (block_continuation) @block_quote_marker)))",
         "(block_quote (paragraph (block_continuation) @block_quote_marker))",
         "(block_quote (block_continuation) @block_quote_marker)" },
+      hl_fill = true,
+      hl_group = 'ye_quote'
     },
     callout_note = {
       icon = { '', '' },
@@ -302,7 +304,11 @@ M.repaint = function()
         M.config.preview[name].icon
     local hl_group = M.config.preview[name].hl_group or name
     local start_row, start_col, end_row, end_col = node:range()
+    -- 获取当前行内容
+    local line = vim.api.nvim_buf_get_lines(bufnr, start_row, start_row + 1, false)[1]
+    local line_length = #line
 
+    -- set icon
     if M.config.preview[name].whole_line then
       vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, 0, {
         virt_text = { { icon:rep(width), hl_group } },
@@ -324,6 +330,15 @@ M.repaint = function()
         conceal = icon,
         hl_group = hl_group, -- use_name
         priority = 0,        -- To ignore conceal hl_group when focused
+      })
+    end
+    if M.config.preview[name].hl_fill then
+      local fill_content = ' '
+      -- 从当前行尾开始, 插入空格, 直到行尾
+      vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, line_length, {
+        virt_text = { { fill_content:rep(width - line_length), hl_group } },
+        virt_text_pos = "overlay",
+        hl_mode = "combine",
       })
     end
   end
