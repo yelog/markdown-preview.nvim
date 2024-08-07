@@ -48,17 +48,24 @@ M.config = {
       icon_padding = { 0, 1 }
     },
     link = {
+      icon = { '' },
+      -- 暂时解决不了去掉方括号的问题, 先暂时保留, 还有不能匹配行首的问题
+      -- regex = "^[^!]-(%[)[^x]+(%]%(.-%))",
+      regex = "[^!]%[[^%[%]]-%](%([^)]-%))",
+      hl_group = 'ye_link',
+      icon_padding = { { 0, 1 } }
+    },
+    link_first = {
       icon = { '', '' },
       -- 暂时解决不了去掉方括号的问题, 先暂时保留, 还有不能匹配行首的问题
-      regex = "^[^!]-(%[)[^x]+(%]%(.-%))",
-      -- regex = "([^!]%[.-%]%b()) ",
+      regex = "^%[[^%[%]]-%](%([^)]-%))",
       hl_group = 'ye_link',
       icon_padding = { { 0, 1 } }
     },
     image = {
-      icon = { '', '' },
+      icon = { '', '' },
       -- 暂时解决不了去掉方括号的问题, 先暂时保留, 还有不能匹配行首的问题
-      regex = "(!%[)[^%[%]]-(%]%(.-%))",
+      regex = "(!)%[[^%[%]]-%](%(.-%))",
       -- regex = "(%[)([^%[%]]-)%](.-%)",
       hl_group = 'ye_link',
       icon_padding = { { 0, 1 } }
@@ -411,16 +418,17 @@ M.repaint = function()
       else
         for i, group in ipairs(match.groups) do
           local hl_group = M.config.preview[name].hl_group or name
+          local conceal = type(icon) == "table" and icon[i] or icon
+          print(conceal, match.groups)
           vim.api.nvim_buf_set_extmark(bufnr, M.namespace, match.lnum, group.start_col, {
             end_line = match.lnum,
             end_col = group.end_col + 1,
-            conceal = type(icon) == "table" and icon[i] or icon,
+            conceal = conceal,
             hl_group = hl_group,
             priority = 0,
           })
           render_padding(M.config.preview[name].icon_padding, i, match.lnum, group.start_col, match.lnum,
             group.end_col + 1, hl_group)
-          -- print(group.text, match.lnum, group.start_col, group.end_col)
         end
       end
     end
