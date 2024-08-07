@@ -5,6 +5,7 @@ local regex_list = {}
 M.namespace = vim.api.nvim_create_namespace "markdown_preview_namespace"
 
 M.config = {
+  enable = true,
   preview = {
     task_list_marker_unchecked = { -- Task list marker unchecked
       icon = "",
@@ -49,7 +50,7 @@ M.config = {
     link = {
       icon = { '', '' },
       -- 暂时解决不了去掉方括号的问题, 先暂时保留, 还有不能匹配行首的问题
-      regex = "^[^!]-(%[)[^%[%]]-(%]%(.-%))",
+      regex = "^[^!]-(%[)[^x]+(%]%(.-%))",
       -- regex = "([^!]%[.-%]%b()) ",
       hl_group = 'ye_link',
       icon_padding = { { 0, 1 } }
@@ -319,19 +320,15 @@ M.setup = function(config)
       vim.api.nvim_set_hl(0, name, previewConfig.highlight)
     end
   end
-
-
-  vim.cmd [[
-        augroup MarkdownPreview
-        autocmd FileChangedShellPost,Syntax,TextChanged,InsertLeave,TextChangedI,WinScrolled * lua require('markdown-preview').repaint()
-        augroup END
-    ]]
+  vim.wo.conceallevel = 2
+  vim.wo.cole = vim.wo.conceallevel
+  vim.opt.concealcursor = 'n'
+  if M.config.enable then
+    M.enable()
+  end
 end
 
 M.repaint = function()
-  vim.wo.conceallevel = 2
-  vim.wo.cole = vim.wo.conceallevel
-
   -- 清理现有的高亮
   vim.api.nvim_buf_clear_namespace(0, M.namespace, 0, -1)
 
@@ -396,39 +393,11 @@ M.repaint = function()
     end
     -- 插入 padding
     render_padding(icon_padding, 0, start_row, start_col, end_row, end_col, hl_group)
-    -- if icon_padding ~= nil then
-    --   if icon_padding[1] ~= 0 then
-    --     vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, start_col, {
-    --       virt_text = { { fill_content:rep(icon_padding[1]), hl_group } },
-    --       virt_text_pos = "inline",
-    --       hl_mode = "combine",
-    --     })
-    --   end
-    --   if icon_padding[2] ~= 0 then
-    --     vim.api.nvim_buf_set_extmark(bufnr, M.namespace, start_row, end_col, {
-    --       virt_text = { { fill_content:rep(icon_padding[2]), hl_group } },
-    --       virt_text_pos = "inline",
-    --       hl_mode = "combine",
-    --     })
-    --   end
-    -- end
   end
   for name, regex in pairs(regex_list) do
     local icon = M.config.preview[name].icon or '';
     local matches = find_matches_with_groups(vim.api.nvim_buf_get_lines(0, 0, -1, false), regex)
-    -- if name == 'tableRow' then
-    --   print(#matches)
-    -- end
     for _, match in ipairs(matches) do
-      -- print(match.lnum, match.start_col, match.end_col)
-
-      -- local replace_postion_list = { { match.lnum, match.start_col, match.lnum, match.end_col } }
-      --
-      -- if M.config.preview[name].replace_postion ~= nil then
-      --   replace_postion_list = M.config.preview[name].replace_postion(match.lnum, match.start_col, match.lnum,
-      --     match.end_col)
-      -- end
-
       if #match.groups == 0 then
         local hl_group = M.config.preview[name].hl_group or name
         vim.api.nvim_buf_set_extmark(bufnr, M.namespace, match.lnum, match.start_col, {
@@ -454,29 +423,42 @@ M.repaint = function()
           -- print(group.text, match.lnum, group.start_col, group.end_col)
         end
       end
-
-      -- for _, replace_postion in ipairs(replace_postion_list) do
-      --   vim.api.nvim_buf_set_extmark(bufnr, M.namespace, replace_postion[1], replace_postion[2], {
-      --     end_line = replace_postion[3],
-      --     end_col = replace_postion[4],
-      --     conceal = icon,
-      --     hl_group = M.config.preview[name].hl_group or name,
-      --     priority = 0,
-      --   })
-      -- end
-      -- vim.api.nvim_buf_set_extmark(bufnr, M.namespace, match.lnum, match.start_col, {
-      --   end_line = match.lnum,
-      --   end_col = match.end_col,
-      --   conceal = M.config.preview[name].icon,
-      --   hl_group = M.config.preview[name].hl_group or name,
-      --   priority = 0,
-      -- })
     end
   end
 end
 
+M.enable = function()
+  M.repaint();
+  M.config.enable = true
+  vim.cmd [[
+        augroup MarkdownPreview
+        autocmd FileChangedShellPost,Syntax,TextChanged,InsertLeave,TextChangedI,WinScrolled * lua require('markdown-preview').repaint()
+        augroup END
+    ]]
+end
+
+M.disable = function()
+  M.config.enable = false
+  vim.api.nvim_buf_clear_namespace(0, M.namespace, 0, -1)
+  -- 清除事件
+  vim.cmd [[
+        augroup MarkdownPreview
+        autocmd!
+        augroup END
+    ]]
+end
+
+M.toggle = function()
+  if M.config.enable then
+    M.disable()
+  else
+    M.enable()
+  end
+end
 
 -- register vim command
--- vim.api.nvim_command [[command! MarkdownPreviewRepaint lua require('markdown-preview').repaint()]]
+vim.api.nvim_command [[command! MarkdownPreviewEnable lua require('markdown-preview').repaint()]]
+vim.api.nvim_command [[command! MarkdownPreviewDisable lua require('markdown-preview').disable()]]
+vim.api.nvim_command [[command! MarkdownPreviewToggle lua require('markdown-preview').toggle()]]
 
 return M
