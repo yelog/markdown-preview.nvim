@@ -1,4 +1,4 @@
-local config = require('markdown-preview.config')
+local default_config = require('markdown-preview.config')
 local utils = require('markdown-preview.utils')
 local render = require('markdown-preview.render')
 local M = {}
@@ -6,7 +6,7 @@ local M = {}
 local query = ""
 local regex_list = {}
 M.namespace = vim.api.nvim_create_namespace "markdown_preview_namespace"
-M.config = config
+M.config = default_config
 
 M.setup = function(config)
   -- merge config

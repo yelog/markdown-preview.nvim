@@ -121,6 +121,7 @@ return function(namespace, config, query, regex_list)
   for name, regex in pairs(regex_list) do
     local icon = config.preview[name].icon or '';
     local matches = utils.find_matches_with_groups(vim.api.nvim_buf_get_lines(0, 0, -1, false), regex)
+    local icon_padding = config.preview[name].icon_padding
     for _, match in ipairs(matches) do
       if #match.groups == 0 then
         local hl_group = config.preview[name].hl_group or name
